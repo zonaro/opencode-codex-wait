@@ -1,7 +1,7 @@
 {
   "name": "opencode-codex-wait",
-  "version": "0.1.0",
-  "description": "Wait for Codex OAuth quota reset in OpenCode 2.x and retry the original request.",
+  "version": "0.2.0",
+  "description": "Observe Codex OAuth quota windows, wait for reset and retry the original OpenCode request.",
   "type": "module",
   "exports": {
     ".": "./src/index.js"

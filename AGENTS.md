@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Manter um plugin pequeno, previsível e seguro que aguarda um reset **explicitamente informado** por respostas de limite do Codex OAuth no OpenCode 2.x. O plugin pode coexistir com `opencode-claudinio`.
+Manter um plugin pequeno, previsível e seguro que aguarda um reset **explicitamente informado** por respostas de limite do Codex OAuth ou por janelas de uso **confirmadamente esgotadas** no OpenCode 2.x. O plugin pode coexistir com `opencode-claudinio`.
 
 ## Regras para agentes
 
@@ -16,11 +16,16 @@ Manter um plugin pequeno, previsível e seguro que aguarda um reset **explicitam
 8. Antes de alterações no adaptador, verifique a documentação atual: https://opencode.ai/v2/docs/build/plugins/server/.
 9. Execute `node --test` antes de concluir. Não provoque erros reais de quota no CI.
 10. Atualize README, `.agents/` e issues quando houver mudança de comportamento. Não mude compatibilidade declarada sem teste correspondente.
+11. Capture quota de forma passiva nas respostas HTTP existentes; não faça polling contínuo ou chamadas de inferência para verificar limites.
+12. O comando `/status` do Codex é interativo. Para fallback não interativo, use apenas o RPC `account/rateLimits/read` do app-server; consulta sob demanda, com timeout, cooldown e **somente após um 429 reconhecido sem reset explícito**.
+13. Nunca assuma que o Codex CLI e o OpenCode compartilham o mesmo OAuth. Documente a necessidade de autenticação na mesma conta; sem status confiável não invente horários.
 
 ## Estrutura
 
 - `src/parser.js`: identificação de erros Codex OAuth e interpretação de headers/reset.
 - `src/retry.js`: capturas temporárias, cálculo de delay, limites de segurança.
+- `src/quota.js`: janelas de quota obtidas por headers e pelo formato do app-server.
+- `src/status.js`: leitura RPC sob demanda do Codex app-server, sem tokens ou prompts.
 - `src/server.js`: registro e descarte dos hooks do OpenCode 2.x.
 - `src/index.js`: ponto de entrada do pacote.
 - `test/`: testes simulados, sem rede e sem credenciais.
@@ -32,4 +37,6 @@ Manter um plugin pequeno, previsível e seguro que aguarda um reset **explicitam
 - O retry permanece na sessão/modelo originais, sem prompt artificial.
 - Erros genéricos ou de outros provedores não são modificados.
 - Sem reset informado, o comportamento padrão não agenda espera fictícia.
+- HTTP 200 com headers de quota não dispara chamada extra; 429 reconhecido sem reset pode consultar o app-server uma vez por cooldown.
+- Quotas parciais ou vencidas nunca são tratadas como exaustão; se faltar estado confiável, oferecer `/status` manual.
 - O plugin funciona ao lado do `opencode-claudinio` sem assumir controle dos erros dele.

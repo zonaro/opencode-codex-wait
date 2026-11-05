@@ -19,6 +19,10 @@ Matriz de cenários:
 - Relógio controlado: descontar tempo entre resposta HTTP e retry.
 - Cap de espera, opções inválidas e expiração do cache.
 - Registro e descarte dos hooks, sem prompts artificiais.
+- Headers de sucesso: 5 horas e semanal no mesmo snapshot, inclusive famílias `codex_other`.
+- Quota parcialmente gasta, malformada, velha e pertencente a outra sessão/modelo não antecipa retries.
+- Leitura app-server simulada: initialize → initialized → account/rateLimits/read; nenhuma inferência.
+- Fallback apenas no 429 reconhecido e incerto; timeout/cooldown e orientação manual para `/status`.
 
 Os testes são totalmente simulados: não exigem acesso OAuth, não enviam requisições e não gastam quota.
 
@@ -32,5 +36,8 @@ Os testes são totalmente simulados: não exigem acesso OAuth, não enviam requi
 6. Se houver erro reconhecido sem reset, confirme o comportamento conservador por padrão; opcionalmente teste `unknownResetRetrySeconds` com valor baixo.
 7. Repita uma verificação no Claudinio e confirme que nenhum erro dele foi capturado pelo Codex Wait.
 8. Cancele uma espera e confirme que não houve nova tentativa espontânea; reiniciar o servidor não deve prometer retomada.
+9. Antes de alcançar a quota, faça uma chamada normal com modelo Codex e confira se os headers `x-codex-*-window-minutes` são enviados pela rota usada no OpenCode. Não copie valores ou tokens dos headers de autenticação.
+10. Quando um 429 não tiver reset, verifique se o Codex CLI está instalado e logado na **mesma conta** (`codex` → `/status`). Compare o horário exibido com a espera planejada, caso o app-server consiga responder.
+11. Teste `statusFallback: "manual"` sem Codex CLI e confirme que o plugin orienta usar `/status` sem marcar um horário fictício.
 
 Se a integração real não reconhecer um erro, registre somente um **exemplo anonimizado** contendo código/tipo e nomes dos campos de reset, sem credenciais, IDs de conta nem headers de autenticação. Adicione um teste de regressão antes de ampliar o parser.
